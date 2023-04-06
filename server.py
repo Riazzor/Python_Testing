@@ -21,6 +21,16 @@ COMPETITIONS = load_competitions('competitions.json')
 CLUBS = load_clubs('clubs.json')
 
 
+def retrieve_club(clubs=CLUBS, value=None):
+    if not value:
+        return False
+    for club in clubs:
+        if value in club.values():
+            return club
+    else:
+        return False
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -28,8 +38,10 @@ def index():
 
 @app.route('/showSummary', methods=['POST'])
 def show_summary():
-    club = [club for club in CLUBS if club['email'] == request.form['email']]
-    return render_template('welcome.html', club=club[0], competitions=COMPETITIONS)
+    club = retrieve_club(clubs=CLUBS, email=request.form['email'])
+    if not club:
+        return render_template('index.html', error='Email does not exist !')
+    return render_template('welcome.html', club=club, competitions=COMPETITIONS)
 
 
 @app.route('/book/<competition>/<club>')
