@@ -21,6 +21,26 @@ COMPETITIONS = load_competitions('competitions.json')
 CLUBS = load_clubs('clubs.json')
 
 
+def retrieve_club(clubs=CLUBS, value=None):
+    if not value:
+        return False
+    for club in clubs:
+        if value in club.values():
+            return club
+    else:
+        return False
+
+
+def retrieve_competition(competitions=COMPETITIONS, value=None):
+    if not value:
+        return False
+    for competition in competitions:
+        if value in competition.values():
+            return competition
+    else:
+        return False
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -28,25 +48,31 @@ def index():
 
 @app.route('/showSummary', methods=['POST'])
 def show_summary():
-    club = [club for club in CLUBS if club['email'] == request.form['email']]
-    return render_template('welcome.html', club=club[0], competitions=COMPETITIONS)
+    club = retrieve_club(clubs=CLUBS, value=request.form['email'])
+    return render_template('welcome.html', club=club, competitions=COMPETITIONS)
 
 
-@app.route('/book/<competition>/<club>')
-def book(competition, club):
-    found_club = [c for c in CLUBS if c['name'] == club][0]
-    found_competition = [c for c in COMPETITIONS if c['name'] == competition][0]
+@app.route('/book/<competition_name>/<club_name>')
+def book(competition_name, club_name):
+    found_club = retrieve_club(clubs=CLUBS, value=club_name)
+    found_competition = retrieve_competition(competitions=COMPETITIONS, value=competition_name)
     if found_club and found_competition:
         return render_template('booking.html', club=found_club, competition=found_competition)
     else:
         flash("Something went wrong-please try again")
-        return render_template('welcome.html', club=club, competitions=COMPETITIONS)
+        return render_template('welcome.html', club=club_name, competitions=COMPETITIONS)
 
 
 @app.route('/purchasePlaces', methods=['POST'])
 def purchase_places():
-    competition = [c for c in COMPETITIONS if c['name'] == request.form['competition']][0]
-    club = [c for c in CLUBS if c['name'] == request.form['club']][0]
+    competition = retrieve_competition(
+        competitions=COMPETITIONS,
+        value=request.form['competition_name'],
+    )
+    club = retrieve_club(
+        clubs=CLUBS,
+        value=request.form['club_name'],
+    )
     places_required = int(request.form['places'])
     competition['numberOfPlaces'] = int(competition['numberOfPlaces']) - places_required
     flash('Great-booking complete!')
