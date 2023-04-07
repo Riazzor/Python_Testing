@@ -41,6 +41,27 @@ def retrieve_competition(competitions=COMPETITIONS, value=None):
         return False
 
 
+def control_places(places_required, places_remaining):
+    """
+    Few control on the required places from the post request.
+    Check that it's a number between 1 and the number of points.
+
+    return the error message and False otherwise
+    """
+    if not places_required.isnumeric():
+        message = 'Something went wrong.'
+        return message, False
+
+    places_required = int(places_required)
+    if places_required > places_remaining:
+        message = 'Not enough places.'
+        return message, False
+    elif places_required == 0:
+        message = 'Nothing done'
+
+    return 'Great-booking complete!', places_required
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -73,9 +94,10 @@ def purchase_places():
         clubs=CLUBS,
         value=request.form['club_name'],
     )
-    places_required = int(request.form['places'])
-    competition['numberOfPlaces'] = int(competition['numberOfPlaces']) - places_required
-    flash('Great-booking complete!')
+    message, places_required = control_places(request.form['places'], int(competition['numberOfPlaces']))
+    flash(message)
+    if places_required:
+        competition['numberOfPlaces'] = int(competition['numberOfPlaces']) - places_required
     return render_template('welcome.html', club=club, competitions=COMPETITIONS)
 
 
