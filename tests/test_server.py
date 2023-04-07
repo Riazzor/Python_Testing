@@ -1,10 +1,13 @@
-from server import load_clubs, load_competitions, retrieve_club
+from server import (
+    load_clubs, load_competitions, retrieve_club,
+    control_places,
+)
 
 import pytest
 
 
 @pytest.fixture
-def clubs_test():
+def clubs_list():
     yield [
         {
             "name": "test 1",
@@ -33,7 +36,7 @@ def clubs_test():
 
 
 @pytest.fixture
-def competitions_test():
+def competitions_list():
     yield [
         {
             "name": "Test competition 1",
@@ -68,28 +71,55 @@ def competitions_test():
     ]
 
 
-def test_can_retrieve_list_of_club_from_json(clubs_test):
+def test_can_retrieve_list_of_club_from_json(clubs_list):
     clubs = load_clubs('tests/fixtures/clubs_test.json')
-    assert clubs == clubs_test
+    assert clubs == clubs_list
 
 
-def test_can_retrieve_list_of_competition_from_json(competitions_test):
+def test_can_retrieve_list_of_competition_from_json(competitions_list):
     competitions = load_competitions('tests/fixtures/competitions_test.json')
-    assert competitions == competitions_test
+    assert competitions == competitions_list
 
 
-def test_can_retrieve_club_by_name(clubs_test):
-    club = retrieve_club(clubs=clubs_test, value='test 1')
-    assert club['email'] == 'test@email.co'
+@pytest.mark.parametrize(
+    'value_input, field, expected_result',
+    [
+        ('test 1', 'email', 'test@email.co'),
+        ('test@email.co', 'name', 'test 1'),
+    ]
+)
+def test_can_retrieve_club_with_value(clubs_list, value_input, field, expected_result):
+    club = retrieve_club(clubs=clubs_list, value=value_input)
+    assert club[field] == expected_result
 
 
-def test_can_retrieve_club_by_email(clubs_test):
-    club = retrieve_club(clubs=clubs_test, value='test@email.co')
-    assert club['name'] == 'test 1'
+@pytest.mark.parametrize(
+    'value_input',
+    [
+        'wrong test name',
+        'wrongtest@email.co',
+    ]
+)
+def test_retrieving_club_with_wrong_entry_return_false(clubs_list, value_input):
+    club = retrieve_club(clubs=clubs_list, value=value_input)
+    assert club is False
 
 
-def test_retrieving_club_with_wrong_entry_return_false(clubs_test):
-    club1 = retrieve_club(clubs=clubs_test, value='wrong test name')
-    club2 = retrieve_club(clubs=clubs_test, value='wrongtest@email.co')
-    assert club1 is False
-    assert club2 is False
+@pytest.mark.parametrize(
+    'required, remaining, message_expected',
+    [
+        ('123', 120, 'Not enough places.'),
+        ('not a number', 120, 'Must require a number.'),
+        ('0', 120, 'Nothing done.'),
+    ]
+)
+def test_requesting_wrong_place_value_return_false(required, remaining, message_expected):
+    message, places = control_places(places_required=required, places_remaining=remaining)
+    assert message == message_expected
+    assert places is False
+
+
+def test_control_places_return_message_and_remaining_places():
+    message, places_remaining = control_places('12', 15)
+    assert message == 'Great-booking complete!'
+    assert places_remaining == 3
