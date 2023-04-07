@@ -1,5 +1,6 @@
 import json
 from flask import Flask, render_template, request, redirect, flash, url_for
+from datetime import datetime
 
 
 def load_clubs(file_name):
@@ -41,6 +42,13 @@ def retrieve_competition(competitions=COMPETITIONS, value=None):
         return False
 
 
+def check_competition_date_is_passed(date):
+    competition_date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+    print(competition_date)
+    print(datetime.today())
+    return datetime.today() < competition_date
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -49,7 +57,13 @@ def index():
 @app.route('/showSummary', methods=['POST'])
 def show_summary():
     club = retrieve_club(clubs=CLUBS, value=request.form['email'])
-    return render_template('welcome.html', club=club, competitions=COMPETITIONS)
+    competitions = []
+    for competition in COMPETITIONS:
+        competition['bookable'] = check_competition_date_is_passed(
+            competition['date']
+        )
+        competitions.append(competition)
+    return render_template('welcome.html', club=club, competitions=competitions)
 
 
 @app.route('/book/<competition_name>/<club_name>')
