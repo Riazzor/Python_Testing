@@ -49,6 +49,8 @@ def index():
 @app.route('/showSummary', methods=['POST'])
 def show_summary():
     club = retrieve_club(clubs=CLUBS, value=request.form['email'])
+    if not club:
+        return render_template('index.html', error='Email does not exist !')
     return render_template('welcome.html', club=club, competitions=COMPETITIONS)
 
 
