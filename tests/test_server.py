@@ -109,8 +109,9 @@ def test_retrieving_club_with_wrong_entry_return_false(clubs_list, value_input):
     'required, remaining, message_expected',
     [
         ('123', 120, 'Not enough places.'),
-        ('not a number', 120, 'Must require a number.'),
+        ('not a number', 120, 'Must require a number : "not a number".'),
         ('0', 120, 'Nothing done.'),
+        ('15', 20, '12 places max.'),
     ]
 )
 def test_requesting_wrong_place_value_return_false(required, remaining, message_expected):

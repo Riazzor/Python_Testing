@@ -49,7 +49,7 @@ def control_places(places_required, places_remaining):
     return the error message and False otherwise
     """
     if not places_required.isnumeric():
-        message = 'Must require a number.'
+        message = f'Must require a number : "{places_required}".'
         return message, False
 
     places_required = int(places_required)
@@ -58,6 +58,9 @@ def control_places(places_required, places_remaining):
         result = False
     elif places_required == 0:
         message = 'Nothing done.'
+        result = False
+    elif places_required > 12:
+        message = '12 places max.'
         result = False
     else:
         message = 'Great-booking complete!'
@@ -106,8 +109,6 @@ def purchase_places():
     message, places_remaining = control_places(request.form['places'], int(competition['numberOfPlaces']))
     flash(message)
     if places_remaining is not False:
-        if places_remaining > 12:
-            places_remaining = 12
         competition['numberOfPlaces'] = places_remaining
     return render_template('welcome.html', club=club, competitions=COMPETITIONS)
 
