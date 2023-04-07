@@ -1,9 +1,11 @@
+import pytest
+from freezegun import freeze_time
+
 from server import (
     load_clubs, load_competitions, retrieve_club,
-    control_places,
+    retrieve_competition, control_places,
+    check_competition_date_is_passed,
 )
-
-import pytest
 
 
 @pytest.fixture
@@ -82,15 +84,27 @@ def test_can_retrieve_list_of_competition_from_json(competitions_list):
 
 
 @pytest.mark.parametrize(
-    'value_input, field, expected_result',
+    'value_input, field_to_test, expected_result',
     [
         ('test 1', 'email', 'test@email.co'),
         ('test@email.co', 'name', 'test 1'),
     ]
 )
-def test_can_retrieve_club_with_value(clubs_list, value_input, field, expected_result):
+def test_can_retrieve_club_with_value(clubs_list, value_input, field_to_test, expected_result):
     club = retrieve_club(clubs=clubs_list, value=value_input)
-    assert club[field] == expected_result
+    assert club[field_to_test] == expected_result
+
+
+@pytest.mark.parametrize(
+    'name_input, field_to_test, expected_result',
+    [
+        ('Test competition 1', 'date', '2020-03-27 10:00:00'),
+        ('Test competition 3', 'date', '2022-03-25 10:00:00'),
+    ]
+)
+def test_can_retrieve_competition_with_name(competitions_list, name_input, field_to_test, expected_result):
+    competition = retrieve_competition(competitions=competitions_list, name=name_input)
+    assert competition[field_to_test] == expected_result
 
 
 @pytest.mark.parametrize(
@@ -103,6 +117,18 @@ def test_can_retrieve_club_with_value(clubs_list, value_input, field, expected_r
 def test_retrieving_club_with_wrong_entry_return_false(clubs_list, value_input):
     club = retrieve_club(clubs=clubs_list, value=value_input)
     assert club is False
+
+
+@pytest.mark.parametrize(
+    'name_input',
+    [
+        'wrong test name',
+        'wrongtest@email.co',
+    ]
+)
+def test_retrieving_competition_with_wrong_name_return_false(competitions_list, name_input):
+    competition = retrieve_competition(competitions=competitions_list, name=name_input)
+    assert competition is False
 
 
 @pytest.mark.parametrize(
@@ -124,3 +150,16 @@ def test_control_places_return_message_and_remaining_places():
     message, places_remaining = control_places('12', 15)
     assert message == 'Great-booking complete!'
     assert places_remaining == 3
+
+
+@pytest.mark.parametrize(
+    'date_to_check, now_date, expected_result',
+    [
+        ('2019-12-24 10:00:00', '2018-10-21', True),
+        ('2019-12-24 10:00:00', '2019-12-25', False),
+    ]
+)
+def test_check_competition_date_control_if_date_is_before_or_after_today(date_to_check, now_date, expected_result):
+    with freeze_time(now_date):
+        date_is_after_today = check_competition_date_is_passed(date_to_check)
+        assert date_is_after_today is expected_result

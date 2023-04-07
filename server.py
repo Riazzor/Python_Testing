@@ -32,11 +32,11 @@ def retrieve_club(clubs=CLUBS, value=None):
         return False
 
 
-def retrieve_competition(competitions=COMPETITIONS, value=None):
-    if not value:
+def retrieve_competition(competitions=COMPETITIONS, name=None):
+    if not name:
         return False
     for competition in competitions:
-        if value in competition.values():
+        if name == competition['name']:
             return competition
     else:
         return False
@@ -98,7 +98,7 @@ def show_summary():
 @app.route('/book/<competition_name>/<club_name>')
 def book(competition_name, club_name):
     found_club = retrieve_club(clubs=CLUBS, value=club_name)
-    found_competition = retrieve_competition(competitions=COMPETITIONS, value=competition_name)
+    found_competition = retrieve_competition(competitions=COMPETITIONS, name=competition_name)
     if found_club and found_competition:
         max_places = int(found_competition['numberOfPlaces'])
         if max_places > 12:
@@ -113,7 +113,7 @@ def book(competition_name, club_name):
 def purchase_places():
     competition = retrieve_competition(
         competitions=COMPETITIONS,
-        value=request.form['competition_name'],
+        name=request.form['competition_name'],
     )
     club = retrieve_club(
         clubs=CLUBS,
