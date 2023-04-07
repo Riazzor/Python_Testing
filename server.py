@@ -84,7 +84,10 @@ def book(competition_name, club_name):
     found_club = retrieve_club(clubs=CLUBS, value=club_name)
     found_competition = retrieve_competition(competitions=COMPETITIONS, value=competition_name)
     if found_club and found_competition:
-        return render_template('booking.html', club=found_club, competition=found_competition)
+        max_places = int(found_competition['numberOfPlaces'])
+        if max_places > 12:
+            max_places = 12
+        return render_template('booking.html', club=found_club, competition=found_competition, max_places=max_places)
     else:
         flash("Something went wrong-please try again")
         return render_template('welcome.html', club=club_name, competitions=COMPETITIONS)
@@ -103,6 +106,8 @@ def purchase_places():
     message, places_remaining = control_places(request.form['places'], int(competition['numberOfPlaces']))
     flash(message)
     if places_remaining is not False:
+        if places_remaining > 12:
+            places_remaining = 12
         competition['numberOfPlaces'] = places_remaining
     return render_template('welcome.html', club=club, competitions=COMPETITIONS)
 
