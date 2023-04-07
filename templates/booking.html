@@ -12,7 +12,7 @@
         <input type="hidden" name="club_name" value="{{club['name']}}">
         <input type="hidden" name="competition_name" value="{{competition['name']}}">
         <label for="places">How many places?</label>
-        <input type="number" name="places" id="places">
+        <input type="number" name="places" id="places" min="1" max="12">
         <button type="submit">Book</button>
     </form>
 </body>
