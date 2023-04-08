@@ -75,6 +75,11 @@ def check_competition_date_is_passed(date):
     return datetime.today() < competition_date
 
 
+def update_club_points(club, places_required):
+    club['points'] = int(club['points']) - places_required
+    club['points'] = str(club['points'])
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -123,6 +128,10 @@ def purchase_places():
     flash(message)
     if places_remaining is not False:
         competition['numberOfPlaces'] = places_remaining
+        places_required = int(request.form['places'])
+# =======
+        update_club_points(club, places_required)
+# >>>>>>> bug/points_not_updated
     return render_template('welcome.html', club=club, competitions=COMPETITIONS)
 
 
