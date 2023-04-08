@@ -4,7 +4,8 @@ from freezegun import freeze_time
 from server import (
     load_clubs, load_competitions, retrieve_club,
     retrieve_competition, control_places,
-    check_competition_date_is_passed,
+    check_competition_date_is_in_futur,
+    update_club_points, update_competition_places,
 )
 
 
@@ -35,6 +36,15 @@ def clubs_list():
          "points": "17",
          },
     ]
+
+
+@pytest.fixture
+def club():
+    yield {
+        "name": "test 1",
+        "email": "test@email.co",
+        "points": "13",
+    }
 
 
 @pytest.fixture
@@ -71,6 +81,15 @@ def competitions_list():
             "numberOfPlaces": "13"
         },
     ]
+
+
+@pytest.fixture
+def competition():
+    yield {
+        "name": "Test competition 1",
+        "date": "2020-03-27 10:00:00",
+        "numberOfPlaces": "25"
+    }
 
 
 def test_can_retrieve_list_of_club_from_json(clubs_list):
@@ -161,5 +180,17 @@ def test_control_places_return_message_and_remaining_places():
 )
 def test_check_competition_date_control_if_date_is_before_or_after_today(date_to_check, now_date, expected_result):
     with freeze_time(now_date):
-        date_is_after_today = check_competition_date_is_passed(date_to_check)
+        date_is_after_today = check_competition_date_is_in_futur(date_to_check)
         assert date_is_after_today is expected_result
+
+
+def test_updating_points_remove_club_points(club):
+    assert club['points'] == '13'
+    update_club_points(club=club, places_required=10)
+    assert club['points'] == '3'
+
+
+def test_updating_places_remove_competition_places(competition):
+    assert competition['numberOfPlaces'] == '25'
+    update_competition_places(competition=competition, places_required=12)
+    assert competition['numberOfPlaces'] == '13'
