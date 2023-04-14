@@ -52,3 +52,10 @@
     Use coverage :  
     make coverage  
     make show_coverage  
+    
+    Use Locust : on 2 different terminal run those command  
+    + start the server for the locust tests :  
+    make locust_server 
+    + start the locust test command :  
+    make locust_test
+    in a browser, go to the url http://127.0.0.1:8089

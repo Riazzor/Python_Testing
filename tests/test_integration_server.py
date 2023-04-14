@@ -107,7 +107,7 @@ def test_purchase_place_update_points_and_places(client, competitions_list, club
 
 def test_logout_endpoint_redirect_to_index(client):
     response = client.get('/logout')
-    assert response.headers['Location'] == 'http://localhost/'
+    assert response.headers['Location'] == '/'  # url of index page
 
     response = client.get('/logout', follow_redirects=True)
     assert b'Registration Portal!' in response.data

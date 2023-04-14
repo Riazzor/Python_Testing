@@ -4,6 +4,12 @@ dev_run:
 test:
 	FLASK_ENV=test FLASK_APP=server.py pytest
 
+locust_server:
+	FLASK_ENV=test FLASK_APP=server.py flask run
+
+locust_test:
+		python -m locust
+
 coverage:
 	FLASK_ENV=test python -m coverage run --source=. -m pytest
 
