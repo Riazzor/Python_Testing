@@ -6,6 +6,7 @@ from server import (
     retrieve_competition, control_places,
     check_competition_date_is_in_futur,
     update_club_points, update_competition_places,
+    get_club_points_board,
 )
 
 
@@ -41,6 +42,15 @@ def test_can_retrieve_club_with_value(clubs_list, value_input, field_to_test, ex
 def test_can_retrieve_competition_with_name(competitions_list, name_input, field_to_test, expected_result):
     competition = retrieve_competition(competitions=competitions_list, name=name_input)
     assert competition[field_to_test] == expected_result
+
+
+def test_get_club_points_board(clubs_list):
+    club_board = get_club_points_board(clubs_list)
+    for club in clubs_list:
+        assert {
+            'name': club['name'],
+            'points': club['points'],
+        } in club_board
 
 
 @pytest.mark.parametrize(

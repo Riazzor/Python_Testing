@@ -16,5 +16,22 @@
         <input type="email" name="email" id="email">
         <button type="submit">Enter</button>
     </form>
+    {% if club_board %}
+        <hr>
+        <table>
+            <thead>
+                <th>Name</th>
+                <th>Points</th>
+            </thead>
+            <tbody>
+                {% for club in club_board %}
+                    <tr>
+                    <td>{{ club['name'] }}</td>
+                    <td>{{ club['points'] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
 </body>
 </html>

@@ -26,6 +26,15 @@ def retrieve_club(clubs, value=None):
         return False
 
 
+def get_club_points_board(clubs):
+    club_board = []
+    for club in clubs:
+        club_board.append(
+            {'name': club['name'], 'points': club['points']}
+        )
+    return club_board
+
+
 def retrieve_competition(competitions, name=None):
     if not name:
         return False
@@ -92,7 +101,10 @@ def create_app():
 
     @app.route('/')
     def index():
-        return render_template('index.html')
+        clubs = CLUBS
+        # Only clubs name and points are used :
+        club_points_board = get_club_points_board(clubs)
+        return render_template('index.html', club_board=club_points_board)
 
     @app.route('/showSummary', methods=['POST'])
     def show_summary():

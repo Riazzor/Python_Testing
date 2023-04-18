@@ -18,6 +18,13 @@ def test_index_endpoint_display_the_welcome_page(client):
     assert b'<h1>Welcome to the GUDLFT Registration Portal!</h1>' in response.data
 
 
+def test_index_endpoint_display_the_club_points_board(client, clubs_list):
+    response = client.get('/')
+    for club in clubs_list:
+        assert f"<td>{club['name']}</td>".encode() in response.data
+        assert f"<td>{club['points']}</td>".encode() in response.data
+
+
 @pytest.mark.parametrize(
     'email, points',
     [
