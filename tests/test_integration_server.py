@@ -1,16 +1,9 @@
 import pytest
 
 from server import (
-    create_app, retrieve_competition,
+    retrieve_competition,
     retrieve_club,
 )
-
-
-@pytest.fixture
-def client():
-    app = create_app()
-    with app.test_client() as client:
-        yield client
 
 
 def test_index_endpoint_display_the_welcome_page(client):
@@ -110,6 +103,29 @@ def test_purchase_place_update_points_and_places(client, competitions_list, club
     # as the response is the list of competition
     assert response.data.count(b'Number of Places: 15') == 1
     assert response.data.count(b'Points available: 3') == 1
+
+
+@pytest.mark.parametrize(
+    'competition_name, place_number, expected_message',
+    [
+        ('Test competition 1', '13', '12 places max.'),
+        ('Test competition 2', '7', 'Not enough places.'),
+        ('Test competition 2', '0', 'Nothing done.')
+    ]
+)
+def test_purchase_place_endpoint_with_wrong_condition_redirects(
+        client, competition_name,
+        place_number, expected_message,
+):
+    response = client.post(
+        '/purchasePlaces',
+        data={
+            'club_name': 'test 2',
+            'competition_name': competition_name,
+            'places': place_number,
+        },
+    )
+    assert expected_message.encode() in response.data
 
 
 def test_logout_endpoint_redirect_to_index(client):

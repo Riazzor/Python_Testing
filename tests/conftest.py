@@ -1,4 +1,15 @@
 import pytest
+from server import create_app
+from freezegun import freeze_time
+
+
+@pytest.fixture
+def client():
+    # Unless specified, make sure the now date is before the competition date.
+    with freeze_time('2019-10-10'):
+        app = create_app()
+        with app.test_client() as client:
+            yield client
 
 
 @pytest.fixture
@@ -50,7 +61,7 @@ def competitions_list():
         {
             "name": "Test competition 2",
             "date": "2020-10-22 13:30:00",
-            "numberOfPlaces": "13"
+            "numberOfPlaces": "5"
         },
         {
             "name": "Test competition 3",

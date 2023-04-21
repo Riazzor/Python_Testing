@@ -16,9 +16,27 @@ def load_competitions(file_name):
         return list_of_competitions
 
 
-def retrieve_club(clubs, value=None):
-    if not value:
-        return False
+def check_competition_date_is_in_futur(date):
+    competition_date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+    return datetime.today() < competition_date
+
+
+def set_competition_bookable_field(list_of_competitions):
+    """
+    Competition is only bookable if the date is in future.
+    Return a copy of the list.
+    """
+    competitions = []
+    for comp in list_of_competitions:
+        competition = comp.copy()
+        competition['bookable'] = check_competition_date_is_in_futur(
+            competition['date']
+        )
+        competitions.append(competition)
+    return competitions
+
+
+def retrieve_club(clubs, value):
     for club in clubs:
         if value in club.values():
             return club
@@ -35,9 +53,7 @@ def get_club_points_board(clubs):
     return club_board
 
 
-def retrieve_competition(competitions, name=None):
-    if not name:
-        return False
+def retrieve_competition(competitions, name):
     for competition in competitions:
         if name == competition['name']:
             return competition
@@ -45,16 +61,25 @@ def retrieve_competition(competitions, name=None):
         return False
 
 
-def control_places(places_required, places_remaining):
+def control_places(places_required, competition, points_remaining):
     """
     Few control on the required places from the post request.
-    Check that it's a number between 1 and the number of points.
+    Check that it's a number between 1 and the number of points,
+    less than the number of places, less than 12 places per club.
 
     return the error message and False otherwise
     """
     if not places_required.isnumeric():
-        message = f'Must require a number : "{places_required}".'
-        return message, False
+        return (
+            f'Must require a number : "{places_required}".',
+            False
+        )
+    if not competition['bookable']:
+        return (
+            'Competition is not bookable',
+            False
+        )
+    places_remaining = int(competition['numberOfPlaces'])
 
     places_required = int(places_required)
     if places_required > places_remaining:
@@ -66,16 +91,14 @@ def control_places(places_required, places_remaining):
     elif places_required > 12:
         message = '12 places max.'
         result = False
+    elif places_required > points_remaining:
+        message = 'Not enough points.'
+        result = False
     else:
         message = 'Great-booking complete!'
         result = places_remaining - places_required
 
     return message, result
-
-
-def check_competition_date_is_in_futur(date):
-    competition_date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
-    return datetime.today() < competition_date
 
 
 def update_club_points(club, places_required):
@@ -108,16 +131,11 @@ def create_app():
 
     @app.route('/showSummary', methods=['POST'])
     def show_summary():
+        competitions = set_competition_bookable_field(COMPETITIONS)
         club = retrieve_club(clubs=CLUBS, value=request.form['email'])
         if not club:
             return render_template('index.html', error='Email does not exist !')
 
-        competitions = []
-        for competition in COMPETITIONS:
-            competition['bookable'] = check_competition_date_is_in_futur(
-                competition['date']
-            )
-            competitions.append(competition)
         return render_template('welcome.html', club=club, competitions=competitions)
 
     @app.route('/book/<competition_name>/<club_name>')
@@ -140,23 +158,26 @@ def create_app():
 
     @app.route('/purchasePlaces', methods=['POST'])
     def purchase_places():
+        competitions = set_competition_bookable_field(COMPETITIONS)
         competition = retrieve_competition(
-            competitions=COMPETITIONS,
+            competitions=competitions,
             name=request.form['competition_name'],
         )
         club = retrieve_club(
             clubs=CLUBS,
             value=request.form['club_name'],
         )
-        message, places_remaining = control_places(request.form['places'], int(competition['numberOfPlaces']))
+        message, places_remaining = control_places(
+            request.form['places'],
+            competition,
+            int(club['points']),
+        )
         flash(message)
         if places_remaining is not False:
             places_required = int(request.form['places'])
             update_competition_places(competition, places_required)
             update_club_points(club, places_required)
-        return render_template('welcome.html', club=club, competitions=COMPETITIONS)
-
-    # TODO: Add route for points display
+        return render_template('welcome.html', club=club, competitions=competitions)
 
     @app.route('/logout')
     def logout():

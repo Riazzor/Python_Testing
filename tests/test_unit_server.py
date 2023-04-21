@@ -1,3 +1,4 @@
+from datetime import datetime
 import pytest
 from freezegun import freeze_time
 
@@ -6,7 +7,7 @@ from server import (
     retrieve_competition, control_places,
     check_competition_date_is_in_futur,
     update_club_points, update_competition_places,
-    get_club_points_board,
+    get_club_points_board, set_competition_bookable_field,
 )
 
 
@@ -18,6 +19,52 @@ def test_can_retrieve_list_of_club_from_json(clubs_list):
 def test_can_retrieve_list_of_competition_from_json(competitions_list):
     competitions = load_competitions('tests/fixtures/competitions_test.json')
     assert competitions == competitions_list
+
+
+def test_set_competition_bookable_field_return_updated_competitions_list(competitions_list):
+    competitions = set_competition_bookable_field(competitions_list)
+    for competition in competitions:
+        assert 'bookable' in competition.keys()
+
+
+@pytest.mark.parametrize(
+    'today_date, date_to_check',
+    [
+        ('2023-03-21', '2023-03-20 10:00:00'),
+        ('2024-04-18', '2023-12-20 10:00:00'),
+    ]
+)
+def test_set_competition_bookable_field_fills_with_false_if_date_passed(today_date, date_to_check):
+    competitions = [
+        {
+            'name': 'Test_competition',
+            'date': date_to_check,
+            'numberOfPlaces': 'Dont care',
+        }
+    ]
+    with freeze_time(today_date):
+        competitions = set_competition_bookable_field(competitions)
+        assert competitions[0]['bookable'] is False
+
+
+@pytest.mark.parametrize(
+    'today_date, date_to_check',
+    [
+        ('2023-03-20', '2023-03-21 10:00:00'),
+        ('2023-04-18', '2024-12-20 10:00:00'),
+    ]
+)
+def test_set_competition_bookable_field_fills_with_true_if_date_in_futur(today_date, date_to_check):
+    competitions = [
+        {
+            'name': 'Test_competition',
+            'date': date_to_check,
+            'numberOfPlaces': 'Dont care',
+        }
+    ]
+    with freeze_time(today_date):
+        competitions = set_competition_bookable_field(competitions)
+        assert competitions[0]['bookable'] is True
 
 
 @pytest.mark.parametrize(
@@ -78,22 +125,32 @@ def test_retrieving_competition_with_wrong_name_return_false(competitions_list, 
 
 
 @pytest.mark.parametrize(
-    'required, remaining, message_expected',
+    'required, remaining, points, message_expected',
     [
-        ('123', 120, 'Not enough places.'),
-        ('not a number', 120, 'Must require a number : "not a number".'),
-        ('0', 120, 'Nothing done.'),
-        ('15', 20, '12 places max.'),
+        ('12', 10, 15, 'Not enough places.'),
+        ('12', 13, 10, 'Not enough points.'),
+        ('not a number', 120, 15, 'Must require a number : "not a number".'),
+        ('0', 120, 15, 'Nothing done.'),
+        ('15', 20, 15, '12 places max.'),
     ]
 )
-def test_requesting_wrong_place_value_return_false(required, remaining, message_expected):
-    message, places = control_places(places_required=required, places_remaining=remaining)
+def test_requesting_wrong_place_value_return_false(required, remaining, points, message_expected):
+    competition = {
+        'numberOfPlaces': remaining,
+        'bookable': True,
+    }
+    message, places = control_places(required, competition, points)
     assert message == message_expected
     assert places is False
 
 
 def test_control_places_return_message_and_remaining_places():
-    message, places_remaining = control_places('12', 15)
+    competition = {
+        'numberOfPlaces': 15,
+        'bookable': True,
+    }
+
+    message, places_remaining = control_places('12', competition, 13)
     assert message == 'Great-booking complete!'
     assert places_remaining == 3
 
