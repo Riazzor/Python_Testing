@@ -115,12 +115,11 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config)
 
-    COMPETITIONS = load_competitions(
-        app.config['PATH'].get('competitions')
-    )
-    CLUBS = load_clubs(
-        app.config['PATH'].get('clubs')
-    )
+    competitions_file_name = app.config['PATH'].get('competitions')
+    clubs_file_name = app.config['PATH'].get('clubs')
+
+    CLUBS = load_clubs(clubs_file_name)
+    COMPETITIONS = load_competitions(competitions_file_name)
 
     @app.route('/')
     def index():
@@ -185,4 +184,5 @@ def create_app():
     return app
 
 
-app = create_app()
+if __name__ == '__main__':
+    app = create_app()

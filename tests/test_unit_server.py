@@ -11,13 +11,13 @@ from server import (
 )
 
 
-def test_can_retrieve_list_of_club_from_json(clubs_list):
-    clubs = load_clubs('tests/fixtures/clubs_test.json')
+def test_can_retrieve_list_of_club_from_json(clubs_list, temp_club_file):
+    clubs = load_clubs(temp_club_file)
     assert clubs == clubs_list
 
 
-def test_can_retrieve_list_of_competition_from_json(competitions_list):
-    competitions = load_competitions('tests/fixtures/competitions_test.json')
+def test_can_retrieve_list_of_competition_from_json(competitions_list, temp_competition_file):
+    competitions = load_competitions(temp_competition_file)
     assert competitions == competitions_list
 
 

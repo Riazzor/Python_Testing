@@ -12,8 +12,8 @@ class DevelopmentConfig:
 
 class TestConfig(DevelopmentConfig):
     PATH = {
-        'competitions': 'tests/fixtures/competitions_test.json',
-        'clubs': 'tests/fixtures/clubs_test.json',
+        'competitions': 'tests/fixtures/tempdir/competition_temp_file.json',
+        'clubs': 'tests/fixtures/tempdir/club_temp_file.json',
     }
     TESTING = True
 
