@@ -10,10 +10,42 @@ def load_clubs(file_name):
         return list_of_clubs
 
 
+def save_club(file_name, club):
+    with open(file_name) as fp:
+        clubs = json.load(fp).get('clubs', [])
+
+    for i, cl in enumerate(clubs):
+        if cl['name'] == club['name']:
+            clubs[i] = club
+            break
+
+    with open(file_name, 'w') as fp:
+        json.dump(
+            {'clubs': clubs},
+            fp,
+        )
+
+
 def load_competitions(file_name):
     with open(file_name) as comps:
         list_of_competitions = json.load(comps)['competitions']
         return list_of_competitions
+
+
+def save_competition(file_name, competition):
+    with open(file_name) as fp:
+        competitions = json.load(fp).get('competitions', [])
+
+    for i, comp in enumerate(competitions):
+        if comp['name'] == competition['name']:
+            competitions[i] = competition
+            break
+
+    with open(file_name, 'w') as fp:
+        json.dump(
+            {'competitions': competitions},
+            fp,
+        )
 
 
 def check_competition_date_is_in_futur(date):
@@ -176,6 +208,8 @@ def create_app():
             places_required = int(request.form['places'])
             update_competition_places(competition, places_required)
             update_club_points(club, places_required)
+            save_competition(competitions_file_name, competition)
+            save_club(clubs_file_name, club)
         return render_template('welcome.html', club=club, competitions=competitions)
 
     @app.route('/logout')

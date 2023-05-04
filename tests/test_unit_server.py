@@ -1,4 +1,3 @@
-from datetime import datetime
 import pytest
 from freezegun import freeze_time
 
@@ -8,6 +7,7 @@ from server import (
     check_competition_date_is_in_futur,
     update_club_points, update_competition_places,
     get_club_points_board, set_competition_bookable_field,
+    save_club, save_competition,
 )
 
 
@@ -125,19 +125,20 @@ def test_retrieving_competition_with_wrong_name_return_false(competitions_list, 
 
 
 @pytest.mark.parametrize(
-    'required, remaining, points, message_expected',
+    'required, remaining, points, bookable, message_expected',
     [
-        ('12', 10, 15, 'Not enough places.'),
-        ('12', 13, 10, 'Not enough points.'),
-        ('not a number', 120, 15, 'Must require a number : "not a number".'),
-        ('0', 120, 15, 'Nothing done.'),
-        ('15', 20, 15, '12 places max.'),
+        ('12', 10, 15, True, 'Not enough places.'),
+        ('12', 13, 10, True, 'Not enough points.'),
+        ('not a number', 120, 15, True, 'Must require a number : "not a number".'),
+        ('0', 120, 15, True, 'Nothing done.'),
+        ('15', 20, 15, True, '12 places max.'),
+        ('10', 20, 15, False, 'Competition is not bookable'),
     ]
 )
-def test_requesting_wrong_place_value_return_false(required, remaining, points, message_expected):
+def test_requesting_wrong_place_value_return_false(required, remaining, points, bookable, message_expected):
     competition = {
         'numberOfPlaces': remaining,
-        'bookable': True,
+        'bookable': bookable,
     }
     message, places = control_places(required, competition, points)
     assert message == message_expected
@@ -178,3 +179,28 @@ def test_updating_places_remove_competition_places(competition):
     assert competition['numberOfPlaces'] == '25'
     update_competition_places(competition=competition, places_required=12)
     assert competition['numberOfPlaces'] == '13'
+
+
+def test_save_club_will_update_the_file_content(temp_club_file):
+    clubs_list = load_clubs(temp_club_file)
+    club = clubs_list[0]
+    assert (club['name'], club['points']) == ('test 1', '13')
+    club['points'] = '10'
+    assert (club['name'], club['points']) == ('test 1', '10')
+    save_club(temp_club_file, club)
+
+    clubs_list = load_clubs(temp_club_file)
+    club2 = clubs_list[0]
+    assert (club2['name'], club2['points']) == ('test 1', '10')
+
+
+def test_save_competition_will_update_the_file_content(temp_competition_file):
+    competitions_list = load_competitions(temp_competition_file)
+    competition = competitions_list[0]
+    assert (competition['name'], competition['date']) == ('Test competition 1', '2020-03-27 10:00:00')
+    competition['date'] = '2020-03-26 13:00:00'
+    save_competition(temp_competition_file, competition)
+
+    competitions_list = load_competitions(temp_competition_file)
+    competition2 = competitions_list[0]
+    assert (competition2['name'], competition2['date']) == ('Test competition 1', '2020-03-26 13:00:00')
