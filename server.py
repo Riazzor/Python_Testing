@@ -48,6 +48,15 @@ def save_competition(file_name, competition):
         )
 
 
+def booked_place_state(club_name, competition):
+    """
+    Each time a club books places, the number are stored in competition file.
+    """
+    competition_booked_places = competition.get('booked_places', {})
+    club_booked_places = int(competition_booked_places.get(club_name, 0))
+    return club_booked_places
+
+
 def check_competition_date_is_in_futur(date):
     competition_date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
     return datetime.today() < competition_date
@@ -93,7 +102,7 @@ def retrieve_competition(competitions, name):
         return False
 
 
-def control_places(places_required, competition, points_remaining):
+def control_places(places_booked, places_required, competition, points_remaining):
     """
     Few control on the required places from the post request.
     Check that it's a number between 1 and the number of points,
@@ -114,18 +123,17 @@ def control_places(places_required, competition, points_remaining):
     places_remaining = int(competition['numberOfPlaces'])
 
     places_required = int(places_required)
-    if places_required > places_remaining:
+    result = False
+    if places_remaining == 0 or places_booked == 12:
+        message = 'No more places.'
+    elif places_required > places_remaining:
         message = 'Not enough places.'
-        result = False
     elif places_required == 0:
         message = 'Nothing done.'
-        result = False
-    elif places_required > 12:
+    elif places_required > (12 - places_booked):
         message = '12 places max.'
-        result = False
     elif places_required > points_remaining:
         message = 'Not enough points.'
-        result = False
     else:
         message = 'Great-booking complete!'
         result = places_remaining - places_required
@@ -133,13 +141,17 @@ def control_places(places_required, competition, points_remaining):
     return message, result
 
 
-def update_club_points(club, places_required):
+def update_club(club, places_required):
     club['points'] = int(club['points']) - places_required
     club['points'] = str(club['points'])
 
 
-def update_competition_places(competition, places_required):
+def update_competition(competition, places_required, club_name):
     places_remaining = int(competition['numberOfPlaces'])
+    booked_places = competition.get('booked_places', {})
+    booked_places[club_name] = places_required + booked_places.get(club_name, 0)
+
+    competition['booked_places'] = booked_places
     competition['numberOfPlaces'] = str(places_remaining - places_required)
 
 
@@ -198,7 +210,9 @@ def create_app():
             clubs=CLUBS,
             value=request.form['club_name'],
         )
+        places_booked = booked_place_state(club['name'], competition)
         message, places_remaining = control_places(
+            places_booked,
             request.form['places'],
             competition,
             int(club['points']),
@@ -206,8 +220,8 @@ def create_app():
         flash(message)
         if places_remaining is not False:
             places_required = int(request.form['places'])
-            update_competition_places(competition, places_required)
-            update_club_points(club, places_required)
+            update_competition(competition, places_required, club['name'])
+            update_club(club, places_required)
             save_competition(competitions_file_name, competition)
             save_club(clubs_file_name, club)
         return render_template('welcome.html', club=club, competitions=competitions)

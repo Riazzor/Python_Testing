@@ -5,9 +5,9 @@ from server import (
     load_clubs, load_competitions, retrieve_club,
     retrieve_competition, control_places,
     check_competition_date_is_in_futur,
-    update_club_points, update_competition_places,
+    update_club, update_competition,
     get_club_points_board, set_competition_bookable_field,
-    save_club, save_competition,
+    save_club, save_competition, booked_place_state,
 )
 
 
@@ -125,22 +125,27 @@ def test_retrieving_competition_with_wrong_name_return_false(competitions_list, 
 
 
 @pytest.mark.parametrize(
-    'required, remaining, points, bookable, message_expected',
+    'required, remaining, points, bookable, booked_places, message_expected',
     [
-        ('12', 10, 15, True, 'Not enough places.'),
-        ('12', 13, 10, True, 'Not enough points.'),
-        ('not a number', 120, 15, True, 'Must require a number : "not a number".'),
-        ('0', 120, 15, True, 'Nothing done.'),
-        ('15', 20, 15, True, '12 places max.'),
-        ('10', 20, 15, False, 'Competition is not bookable'),
+        ('12', 10, 15, True, 0, 'Not enough places.'),
+        ('12', 13, 10, True, 0, 'Not enough points.'),
+        ('not a number', 120, 15, True, 0, 'Must require a number : "not a number".'),
+        ('0', 120, 15, True, 0, 'Nothing done.'),
+        ('15', 20, 15, True, 0, '12 places max.'),
+        ('10', 20, 15, False, 0, 'Competition is not bookable'),
+        ('10', 20, 15, True, 12, 'No more places.'),
     ]
 )
-def test_requesting_wrong_place_value_return_false(required, remaining, points, bookable, message_expected):
+def test_requesting_wrong_place_value_return_false(
+        required, remaining, points, bookable,
+        booked_places, message_expected,
+):
     competition = {
         'numberOfPlaces': remaining,
         'bookable': bookable,
+        'booked_places': booked_places,
     }
-    message, places = control_places(required, competition, points)
+    message, places = control_places(booked_places, required, competition, points)
     assert message == message_expected
     assert places is False
 
@@ -151,7 +156,7 @@ def test_control_places_return_message_and_remaining_places():
         'bookable': True,
     }
 
-    message, places_remaining = control_places('12', competition, 13)
+    message, places_remaining = control_places(0, '12', competition, 13)
     assert message == 'Great-booking complete!'
     assert places_remaining == 3
 
@@ -171,14 +176,26 @@ def test_check_competition_date_control_if_date_is_before_or_after_today(date_to
 
 def test_updating_points_remove_club_points(club):
     assert club['points'] == '13'
-    update_club_points(club=club, places_required=10)
+    update_club(club=club, places_required=10)
     assert club['points'] == '3'
 
 
 def test_updating_places_remove_competition_places(competition):
     assert competition['numberOfPlaces'] == '25'
-    update_competition_places(competition=competition, places_required=12)
+    update_competition(competition=competition, places_required=12, club_name='club_name')
     assert competition['numberOfPlaces'] == '13'
+
+
+def test_updating_places_add_booked_places_in_competition(competition):
+    assert not competition.get('booked_places', False)
+    update_competition(competition=competition, places_required=12, club_name='club_name')
+    assert competition.get('booked_places', False) == {'club_name': 12}
+
+    update_competition(competition=competition, places_required=10, club_name='club_name2')
+    assert competition.get('booked_places', False) == {
+        'club_name': 12,
+        'club_name2': 10,
+    }
 
 
 def test_save_club_will_update_the_file_content(temp_club_file):
@@ -204,3 +221,8 @@ def test_save_competition_will_update_the_file_content(temp_competition_file):
     competitions_list = load_competitions(temp_competition_file)
     competition2 = competitions_list[0]
     assert (competition2['name'], competition2['date']) == ('Test competition 1', '2020-03-26 13:00:00')
+
+
+def test_booked_places_returns_already_booked_places(competition):
+    competition['booked_places'] = {'club_name': 10}
+    assert booked_place_state('club_name', competition) == 10

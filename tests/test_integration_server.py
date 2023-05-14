@@ -1,6 +1,8 @@
 import pytest
 
 from server import (
+    load_competitions,
+    load_clubs,
     retrieve_competition,
     retrieve_club,
 )
@@ -126,6 +128,30 @@ def test_purchase_place_endpoint_with_wrong_condition_redirects(
         },
     )
     assert expected_message.encode() in response.data
+
+
+def test_purchase_place_endpoint_update_files(client, competition, club, temp_club_file, temp_competition_file):
+    old_club_points = int(club['points'])
+    old_competition_places = int(competition['numberOfPlaces'])
+
+    response = client.post(
+        '/purchasePlaces',
+        data={
+            'club_name': club['name'],
+            'competition_name': competition['name'],
+            'places': 10,
+        },
+    )
+    assert response.status_code == 200
+    competitions = load_competitions(temp_competition_file)
+    clubs = load_clubs(temp_club_file)
+    competition = retrieve_competition(competitions, competition['name'])
+    club = retrieve_club(clubs, club['name'])
+    assert int(club['points']) == old_club_points - 10
+    assert int(competition['numberOfPlaces']) == old_competition_places - 10
+    assert competition['booked_places'] == {
+        club['name']: 10,
+    }
 
 
 def test_logout_endpoint_redirect_to_index(client):
